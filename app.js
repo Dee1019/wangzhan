@@ -13,15 +13,20 @@ const { TabPane } = Tabs;
 
 /* ===================== Supabase 配置 ===================== */
 // 部署前已配置（用户提供的真实凭据）
-// VERSION: v6-LEGACY-ANON
-console.log("[学生档案] Loading app.js VERSION v6-LEGACY-ANON");
+// VERSION: v7-CDN-FIX
+console.log("[学生档案] Loading app.js VERSION v7-CDN-FIX");
 const SUPABASE_URL = "https://rxuyheypyjonjaupqoux.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dXloZXlweWpvbmphdXBxb3V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MDE1OTUsImV4cCI6MjEwMzk3NzU5NX0.9aRpZdtPbgo5B7ZcHJqD4QRqcVA9XbaDFGHNw_ISXfA";
 
 let supabase = null;
-if (SUPABASE_URL !== "https://YOUR-PROJECT-ID.supabase.co" && window.supabase) {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  console.log("[学生档案] Supabase client initialized, URL:", SUPABASE_URL);
+if (typeof window !== "undefined") {
+  console.log("[学生档案] window.supabase 类型:", typeof window.supabase);
+  if (window.supabase && window.supabase.createClient) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log("[学生档案] Supabase client 初始化成功");
+  } else {
+    console.error("[学生档案] 严重错误：window.supabase 未加载，请检查 CDN 链接是否可访问");
+  }
 }
 
 /* ===================== 工具函数 ===================== */
@@ -357,40 +362,46 @@ const AuthPage = () => {
 
 /* ===================== 配置未就绪提示页 ===================== */
 
-const NotConfiguredPage = () => (
-  <div
-    style={{
-      minHeight: "100vh",
-      background: "#fef3c7",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 24,
-    }}
-  >
+const NotConfiguredPage = () => {
+  const supabaseLoaded = typeof window !== "undefined" && !!window.supabase;
+  return (
     <div
       style={{
-        background: "#fff",
-        borderRadius: 12,
-        padding: 32,
-        maxWidth: 600,
-        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        minHeight: "100vh",
+        background: "#fef3c7",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
       }}
     >
-      <h2 style={{ margin: 0, color: "#92400e" }}>⚠️ Supabase 尚未配置</h2>
-      <p style={{ color: "#6b7280", lineHeight: 1.8 }}>
-        请按以下步骤完成配置：
-      </p>
-      <ol style={{ color: "#374151", lineHeight: 1.8 }}>
-        <li>打开 Supabase 控制台 <a href="https://supabase.com" target="_blank">supabase.com</a> 创建项目</li>
-        <li>在 SQL Editor 执行 <code>init.sql</code> 中的 SQL</li>
-        <li>把 <code>app.js</code> 顶部的 <code>SUPABASE_URL</code> 和 <code>SUPABASE_ANON_KEY</code> 替换为你的值</li>
-        <li>在 <code>index.html</code> 引入 <code>@supabase/supabase-js</code> CDN</li>
-        <li>重新部署</li>
-      </ol>
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 12,
+          padding: 32,
+          maxWidth: 600,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        }}
+      >
+        <h2 style={{ margin: 0, color: "#92400e" }}>⚠️ 网站加载异常</h2>
+        <p style={{ color: "#6b7280", lineHeight: 1.8 }}>
+          {supabaseLoaded
+            ? "Supabase 已加载但配置未生效，请检查 app.js 顶部的 SUPABASE_URL 和 KEY。"
+            : "Supabase 库（supabase-js）没加载成功。请检查网络或 CDN 链接。"}
+        </p>
+        <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 6, padding: 12, fontSize: 12, fontFamily: "monospace", color: "#374151", marginTop: 12 }}>
+          <div>window.supabase: {String(supabaseLoaded)}</div>
+          <div>SUPABASE_URL: {SUPABASE_URL}</div>
+          <div>KEY 前 20 位: {SUPABASE_ANON_KEY.substring(0, 20)}...</div>
+        </div>
+        <p style={{ color: "#6b7280", lineHeight: 1.8, marginTop: 16, fontSize: 13 }}>
+          💡 打开浏览器 <strong>F12 → Console</strong> 看具体错误，把截图发给我。
+        </p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ===================== 学生列表页 ===================== */
 
