@@ -13,8 +13,8 @@ const { TabPane } = Tabs;
 
 /* ===================== Supabase 配置 ===================== */
 // 部署前已配置（用户提供的真实凭据）
-// VERSION: v7-CDN-FIX
-console.log("[学生档案] Loading app.js VERSION v7-CDN-FIX");
+// VERSION: v8-AUTO-ORG
+console.log("[学生档案] Loading app.js VERSION v8-AUTO-ORG");
 const SUPABASE_URL = "https://rxuyheypyjonjaupqoux.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4dXloZXlweWpvbmphdXBxb3V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MDE1OTUsImV4cCI6MjEwMzk3NzU5NX0.9aRpZdtPbgo5B7ZcHJqD4QRqcVA9XbaDFGHNw_ISXfA";
 
@@ -171,8 +171,22 @@ const api = {
 
   async upsertStudent(student) {
     if (!supabase) throw new Error("Supabase 未配置");
+    // v8-AUTO-ORG: 自动从 profile 读 org_id 和 user.id（RLS 策略强制要求）
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("未登录");
+    const { data: profile, error: pErr } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .single();
+    if (pErr) throw pErr;
+    if (!profile || !profile.org_id) {
+      throw new Error("未找到用户机构，请联系管理员或重新注册");
+    }
     const payload = {
       id: student.id,
+      org_id: profile.org_id,
+      created_by: user.id,
       data: student,
       updated_at: new Date().toISOString(),
     };
